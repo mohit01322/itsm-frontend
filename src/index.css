@@ -1,4 +1,4 @@
-:root { --navy:#1f3a5f; --blue:#2f6fb0; --bg:#f4f6f9; --line:#d6dde6; --bad:#c0392b; --muted:#6b7684; }
+:root { --navy:#0b6e4f; --blue:#2f6fb0; --bg:#f4f6f9; --line:#d6dde6; --bad:#c0392b; --muted:#6b7684; }
 * { box-sizing: border-box; }
 body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:#1b2430; }
 a { color:var(--blue); }

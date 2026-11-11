@@ -15,7 +15,7 @@ export default function MyIncidents() {
   return (
     <>
       <div className="row">
-        <h2>My incidents</h2>
+        <h2>My tickets</h2>
         <span className="spacer" />
         <Link className="btn" to="/employee/report">+ Report incident</Link>
       </div>

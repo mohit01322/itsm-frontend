@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, errorMessage } from '../../api/client'
 
-const CATEGORIES = ['NETWORK', 'HARDWARE', 'SOFTWARE', 'DATABASE', 'SECURITY']
+const CATEGORIES = ['NETWORK', 'HARDWARE', 'SOFTWARE', 'DATABASE', 'SECURITY', 'OTHER']
 const LEVELS = ['HIGH', 'MEDIUM', 'LOW']
 
 // MOHIY: this page is yours. The backend sends field errors as {title: "Title is required"}; we show them under each field.
@@ -52,7 +52,8 @@ export default function ReportIncident() {
       </label>
       <label>
         Description
-        <textarea rows={4} value={form.description} onChange={set('description')} />
+        <textarea rows={4} value={form.description} onChange={set('description')} maxLength={500}/>
+        <span className="muted">{form.description.length} / 500</span>
         {fieldErrors.description && <span className="bad">{fieldErrors.description}</span>}
       </label>
       {select('category', 'Category', CATEGORIES)}
