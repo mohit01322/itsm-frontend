@@ -52,8 +52,8 @@ export default function ReportIncident() {
       </label>
       <label>
         Description
-        <textarea rows={4} value={form.description} onChange={set('description')} maxLength={500}/>
-        <span className="muted">{form.description.length} / 500</span>
+        <textarea rows={4} value={form.description} onChange={set('description')} maxLength={2000}/>
+        <span className="muted">{form.description.length} / 2000</span>
         {fieldErrors.description && <span className="bad">{fieldErrors.description}</span>}
       </label>
       {select('category', 'Category', CATEGORIES)}

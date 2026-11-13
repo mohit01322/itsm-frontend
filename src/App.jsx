@@ -4,7 +4,6 @@ import ProtectedRoute from './auth/ProtectedRoute'
 import Navbar from './components/Navbar'
 
 import Login from './pages/Login'
-import Register from './pages/employee/Register'
 import MyIncidents from './pages/employee/MyIncidents'
 import ReportIncident from './pages/employee/ReportIncident'
 import IncidentDetail from './pages/employee/IncidentDetail'
@@ -26,7 +25,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to={user ? homeFor(user.role) : '/login'} replace />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          {/* Register is hidden until the backend adds POST /api/auth/register (page kept in pages/employee/Register.jsx) */}
 
           {/* Employee area (Mohiy) */}
           <Route path="/employee" element={<ProtectedRoute roles={['EMPLOYEE']}><MyIncidents /></ProtectedRoute>} />

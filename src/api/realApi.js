@@ -6,7 +6,7 @@ function authHeader() {
 }
 
 async function request(path, options = {}) {
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) }
+  const headers = { 'Content-Type': 'application/json',   'X-Requested-With': 'XMLHttpRequest', ...(options.headers || {}) }
   if (authHeader()) headers.Authorization = authHeader()
   const res = await fetch(path, { ...options, headers })
   const text = await res.text()

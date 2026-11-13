@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { api, errorMessage } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
 import useLoad from '../../components/useLoad'
@@ -10,6 +10,7 @@ import { useState } from 'react'
 export default function IncidentDetail() {
   const { id } = useParams()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const { data, loading, error, reload } = useLoad(async () => {
     const list = await api.searchIncidents({ incidentId: id })
     const sla = await api.getSla(id)
@@ -35,7 +36,7 @@ export default function IncidentDetail() {
 
   return (
     <div className="card">
-      <p><Link to={-1}>&larr; Back</Link></p>
+      <p><button className="btn small" onClick={() => navigate(-1)}>&larr; Back</button></p>
       <h2>#{i.id} {i.title}</h2>
       <p><PriorityBadge priority={i.priority} /> <StatusBadge status={i.status} /></p>
       <p>{i.description}</p>
