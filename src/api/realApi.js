@@ -70,3 +70,7 @@ export const getSla = (id) => request('/api/sla/' + id)
 export const getNotifications = () => request('/api/notifications')
 export const markRead = (id) => request('/api/notifications/' + id + '/read', { method: 'PUT' })
 export const getAudit = (incidentId) => request('/api/audit/' + incidentId)
+
+// Technicians: add and edit (used by the admin Technicians page)
+export const createTechnician = (body) => request('/api/technicians', { method: 'POST', body: JSON.stringify(body) })
+export const updateTechnician = (id, body) => request('/api/technicians/' + id, { method: 'PUT', body: JSON.stringify(body) })

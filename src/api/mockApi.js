@@ -169,3 +169,19 @@ export async function getAudit(incidentId) {
   await delay()
   return audit.filter((a) => a.incidentId === Number(incidentId))
 }
+
+// Technicians: add and edit (used by the admin Technicians page)
+export async function createTechnician(body) {
+  await delay()
+  const t = { activeIncidentCount: 0, active: true, ...body, id: Math.max(0, ...technicians.map((x) => x.id)) + 1 }
+  technicians.push(t)
+  return t
+}
+
+export async function updateTechnician(id, body) {
+  await delay()
+  const t = technicians.find((x) => x.id === Number(id))
+  if (!t) throw fail(400, { error: 'Technician not found: ' + id })
+  Object.assign(t, body, { id: t.id })
+  return t
+}
