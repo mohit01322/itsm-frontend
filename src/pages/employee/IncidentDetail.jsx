@@ -17,11 +17,19 @@ export default function IncidentDetail() {
     return { incident: list[0], sla }
   }, [id])
   const [actionError, setActionError] = useState('')
+  const [notes, setNotes] = useState('')
 
-  async function setStatus(status) {
+  // currentStatus = the incident's status now. Resolving needs notes (the backend checks this too).
+  async function setStatus(status, currentStatus) {
     setActionError('')
+    const done = (s) => s === 'RESOLVED' || s === 'CLOSED'
+    if (status === 'RESOLVED' && !done(currentStatus) && !notes.trim()) {
+      setActionError('Write resolution notes before setting RESOLVED.')
+      return
+    }
     try {
-      await api.updateStatus(id, status)
+      await api.updateStatus(id, status, done(status) ? notes.trim() : undefined)
+      setNotes('')
       reload()
     } catch (e) {
       setActionError(errorMessage(e))
@@ -32,7 +40,8 @@ export default function IncidentDetail() {
   if (error) return <p className="bad">{error}</p>
   const { incident: i, sla } = data
   if (!i) return <p>Incident not found.</p>
-  const canChange = user.role !== 'EMPLOYEE'
+  // Admins can change any incident; a technician only the incidents assigned to them
+  const canChange = user.role === 'ADMINISTRATOR' || (user.role === 'TECHNICIAN' && user.technicianId != null && i.assignedTechnician?.id === user.technicianId)
 
   return (
     <div className="card">
@@ -48,11 +57,18 @@ export default function IncidentDetail() {
         <dt>SLA deadline</dt>
         <dd className={sla.slaViolated ? 'bad' : ''}>{new Date(sla.slaDeadline).toLocaleString()} {sla.slaViolated ? '(SLA violated)' : '(within SLA)'}</dd>
         {i.resolvedAt && (<><dt>Resolved</dt><dd>{new Date(i.resolvedAt).toLocaleString()}</dd></>)}
+        {i.resolutionNotes && (<><dt>Resolution notes</dt><dd style={{ whiteSpace: 'pre-wrap' }}>{i.resolutionNotes}</dd></>)}
       </dl>
+      {canChange && i.status !== 'RESOLVED' && i.status !== 'CLOSED' && (
+        <label>
+          Resolution notes <span className="muted">(needed to set RESOLVED)</span>
+          <textarea rows={3} maxLength={2000} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </label>
+      )}
       {canChange && (
         <div className="row">
           {['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map((s) => (
-            <button key={s} className="btn small" disabled={i.status === s} onClick={() => setStatus(s)}>Set {s.replace('_', ' ')}</button>
+            <button key={s} className="btn small" disabled={i.status === s} onClick={() => setStatus(s, i.status)}>Set {s.replace('_', ' ')}</button>
           ))}
         </div>
       )}

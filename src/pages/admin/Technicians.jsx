@@ -5,7 +5,7 @@ import { CATEGORIES, showError } from './shared'
 
 // Admin page: list technicians, add a new one, edit name / skills / available.
 // Backend: GET /api/technicians, POST /api/technicians, PUT /api/technicians/{id}
-const BLANK = { name: '', skills: [], active: true }
+const BLANK = { name: '', skills: [], active: true, username: '', password: '' }
 const CHECK = { flexDirection: 'row', alignItems: 'center', gap: 6, fontWeight: 400 }
 const OK = { color: '#25612f', fontSize: 13, fontWeight: 600 }
 
@@ -23,7 +23,7 @@ export default function Technicians() {
 
   function startEdit(t) {
     setEditing(t)
-    setForm({ name: t.name, skills: [...(t.skills || [])], active: t.active !== false })
+    setForm({ name: t.name, skills: [...(t.skills || [])], active: t.active !== false, username: t.username || '', password: '' })
     setMessage(null)
     window.scrollTo(0, 0)
   }
@@ -45,13 +45,17 @@ export default function Technicians() {
       active: form.active,
       // Keep the current workload. If we leave this out, the backend resets it to 0.
       activeIncidentCount: editing ? editing.activeIncidentCount : 0,
+      // The login this technician signs in with. A password is only sent to create a new login or reset it.
+      username: form.username.trim(),
+      ...(form.password ? { password: form.password } : {}),
     }
 
     setBusy(true)
     try {
       if (editing) await api.updateTechnician(editing.id, body)
       else await api.createTechnician(body)
-      setMessage({ bad: false, text: editing ? 'Technician updated.' : 'Technician added.' })
+      const login = body.username
+      setMessage({ bad: false, text: (editing ? 'Technician updated.' : 'Technician added.') + (login ? ' They sign in as "' + login + '".' : '') })
       cancel()
       reload()
     } catch (err) {
@@ -71,6 +75,16 @@ export default function Technicians() {
           Name
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Ravi Kumar" />
         </label>
+        <div className="row" style={{ alignItems: 'flex-start' }}>
+          <label style={{ flex: '1 1 240px' }}>
+            Login username <span className="muted">(the login this technician signs in with)</span>
+            <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="e.g. technician" autoComplete="off" />
+          </label>
+          <label style={{ flex: '1 1 240px' }}>
+            Password <span className="muted">(only to create a new login, or reset it)</span>
+            <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" />
+          </label>
+        </div>
         <div>
           <b style={{ fontSize: 14 }}>Skills</b> <span className="muted">(same words as incident categories)</span>
           <div className="row" style={{ marginTop: 6 }}>
@@ -99,13 +113,14 @@ export default function Technicians() {
         <div className="tablewrap">
           <table>
             <thead>
-              <tr><th>ID</th><th>Name</th><th>Skills</th><th>Active incidents</th><th>Available</th><th></th></tr>
+              <tr><th>ID</th><th>Name</th><th>Login</th><th>Skills</th><th>Active incidents</th><th>Available</th><th></th></tr>
             </thead>
             <tbody>
               {data.map((t) => (
                 <tr key={t.id}>
                   <td>{t.id}</td>
                   <td>{t.name}</td>
+                  <td>{t.username || <span className="muted">not linked</span>}</td>
                   <td>{(t.skills || []).join(', ')}</td>
                   <td>{t.activeIncidentCount ?? 0}</td>
                   <td>{t.active === false ? <span className="muted">No</span> : 'Yes'}</td>

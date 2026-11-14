@@ -77,6 +77,9 @@ export async function getIncidents() {
   return [...incidents].sort((a, b) => b.id - a.id)
 }
 
+// Fake data has no reporters, so "my incidents" shows them all
+export const getMyIncidents = () => getIncidents()
+
 export async function searchIncidents(p = {}) {
   await delay()
   return incidents.filter(
@@ -117,14 +120,16 @@ export async function createIncident(body) {
   return inc
 }
 
-export async function updateStatus(id, status) {
+export async function updateStatus(id, status, notes) {
   await delay()
   const inc = incidents.find((i) => i.id === Number(id))
   if (!inc) throw fail(400, { error: 'Incident not found' })
   if (!['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].includes(status)) throw fail(400, { error: 'Invalid status' })
+  if (status === 'RESOLVED' && !['RESOLVED', 'CLOSED'].includes(inc.status) && !(notes || '').trim()) throw fail(400, { error: 'Resolution notes are required to resolve an incident' })
   audit.push({ id: audit.length + 1, incidentId: inc.id, action: 'STATUS_UPDATED', performedBy: 'you', timestamp: new Date().toISOString(), details: inc.status + ' to ' + status })
   inc.status = status
   if (status === 'RESOLVED' || status === 'CLOSED') inc.resolvedAt = new Date().toISOString()
+  if (notes) inc.resolutionNotes = notes
   return inc
 }
 

@@ -64,7 +64,7 @@ export function searchIncidents(params = {}) {
 }
 
 export const createIncident = (body) => request('/api/incidents', { method: 'POST', body: JSON.stringify(body) })
-export const updateStatus = (id, status) => request('/api/incidents/' + id + '/status?status=' + status, { method: 'PUT' })
+export const updateStatus = (id, status, notes) => request('/api/incidents/' + id + '/status?status=' + status + (notes ? '&notes=' + encodeURIComponent(notes) : ''), { method: 'PUT' })
 export const getTechnicians = () => request('/api/technicians')
 export const assignIncident = (incidentId, strategy) => request('/api/assignments?incidentId=' + incidentId + '&strategy=' + strategy, { method: 'POST' })
 export const getSla = (id) => request('/api/sla/' + id)
