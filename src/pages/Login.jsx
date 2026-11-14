@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth, homeFor } from '../auth/AuthContext'
 import { errorMessage } from '../api/client'
 
@@ -35,6 +35,7 @@ export default function Login() {
       {error && <p className="bad">{error}</p>}
       <button className="btn" disabled={busy}>{busy ? 'Logging in...' : 'Log in'}</button>
       <p className="muted">Demo users: employee / employee123, technician / tech123, admin / admin123</p>
+      <p>New employee? <Link to="/register">Register</Link></p>
     </form>
   )
 }

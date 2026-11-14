@@ -4,10 +4,8 @@ import { api } from '../../api/client'
 import useLoad from '../../components/useLoad'
 import IncidentTable from '../../components/IncidentTable'
 
-// MOHIY: this page is yours.
-// TODO (after the backend adds GET /api/incidents/mine): call that instead, so employees only see their own incidents.
 export default function MyIncidents() {
-  const { data, loading, error } = useLoad(() => api.getIncidents())
+  const { data, loading, error } = useLoad(() => api.getMyIncidents())
   const [text, setText] = useState('')
 
   const shown = (data || []).filter((i) => i.title.toLowerCase().includes(text.toLowerCase()))

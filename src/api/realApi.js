@@ -5,8 +5,13 @@ function authHeader() {
   return sessionStorage.getItem('auth')
 }
 
+function clearAuth() {
+  sessionStorage.removeItem('auth')
+  sessionStorage.removeItem('user')
+}
+
 async function request(path, options = {}) {
-  const headers = { 'Content-Type': 'application/json',   'X-Requested-With': 'XMLHttpRequest', ...(options.headers || {}) }
+  const headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', ...(options.headers || {}) }
   if (authHeader()) headers.Authorization = authHeader()
   const res = await fetch(path, { ...options, headers })
   const text = await res.text()
@@ -17,6 +22,10 @@ async function request(path, options = {}) {
     data = text
   }
   if (!res.ok) {
+    // On 401, clear stored credentials so the user is forced to log in again
+    if (res.status === 401) {
+      clearAuth()
+    }
     const e = new Error('Request failed (' + res.status + ')')
     e.status = res.status
     e.data = data // for a 400 this is {fieldName: "message"}
@@ -26,21 +35,11 @@ async function request(path, options = {}) {
 }
 
 const normaliseRole = (r) => (r || '').replace('ROLE_', '')
-const guessRole = (u) => (u === 'admin' ? 'ADMINISTRATOR' : u === 'technician' ? 'TECHNICIAN' : 'EMPLOYEE')
 
 export async function login(username, password) {
   sessionStorage.setItem('auth', 'Basic ' + btoa(username + ':' + password))
   try {
-    let me = null
-    try {
-      me = await request('/api/me') // requested from the backend team
-    } catch (e) {
-      if (e.status === 401) throw e
-    }
-    if (!me) {
-      await request('/api/incidents') // proves the password is right
-      me = { username, role: guessRole(username) } // fallback until /api/me exists
-    }
+    const me = await request('/api/me')
     return { username: me.username, role: normaliseRole(me.role), technicianId: me.technicianId ?? null }
   } catch (e) {
     sessionStorage.removeItem('auth')
@@ -49,12 +48,14 @@ export async function login(username, password) {
 }
 
 export function logout() {
-  sessionStorage.removeItem('auth')
+  clearAuth()
 }
 
-export const register = (body) => request('/api/auth/register', { method: 'POST', body: JSON.stringify(body) }) // requested
+export const register = (body) => request('/api/auth/register', { method: 'POST', body: JSON.stringify(body) })
 
 export const getIncidents = () => request('/api/incidents')
+
+export const getMyIncidents = () => request('/api/incidents/mine')
 
 export function searchIncidents(params = {}) {
   const q = new URLSearchParams()
