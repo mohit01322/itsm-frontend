@@ -55,6 +55,14 @@ export const register = (body) => request('/api/auth/register', { method: 'POST'
 
 export const getIncidents = () => request('/api/incidents')
 
+// Change my own password. Afterwards every request must carry the new password, so the stored login is updated too.
+export async function changePassword(currentPassword, newPassword) {
+  const result = await request('/api/me/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) })
+  const username = atob(authHeader().replace('Basic ', '')).split(':')[0]
+  sessionStorage.setItem('auth', 'Basic ' + btoa(username + ':' + newPassword))
+  return result
+}
+
 export const getMyIncidents = () => request('/api/incidents/mine')
 
 export function searchIncidents(params = {}) {

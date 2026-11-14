@@ -72,6 +72,12 @@ export async function register(body) {
   return { username: body.username, role: 'EMPLOYEE' }
 }
 
+export async function changePassword(currentPassword, newPassword) {
+  await delay()
+  if (!newPassword || newPassword.length < 6) throw fail(400, { error: 'New password must be at least 6 characters' })
+  return { message: 'Password changed' }
+}
+
 export async function getIncidents() {
   await delay()
   return [...incidents].sort((a, b) => b.id - a.id)
