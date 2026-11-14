@@ -6,6 +6,7 @@ import { api, errorMessage } from '../../api/client'
 export default function Register() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
 
@@ -13,7 +14,7 @@ export default function Register() {
     e.preventDefault()
     setError('')
     try {
-      await api.register({ username, password })
+      await api.register({ username, password, email: email.trim() })
       setDone(true)
     } catch (err) {
       setError(errorMessage(err))
@@ -27,6 +28,7 @@ export default function Register() {
       <h2>Register (employee)</h2>
       <label>Username<input value={username} onChange={(e) => setUsername(e.target.value)} /></label>
       <label>Password (min 6 characters)<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+      <label>Email (optional, for notification emails)<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" /></label>
       {error && <p className="bad">{error}</p>}
       <button className="btn">Create account</button>
     </form>

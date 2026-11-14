@@ -55,6 +55,36 @@ export const register = (body) => request('/api/auth/register', { method: 'POST'
 
 export const getIncidents = () => request('/api/incidents')
 
+// Who am I (username, role, technicianId, email). Used by the My account page.
+export const getMe = () => request('/api/me')
+
+// Save my email address for notification emails. An empty value removes it.
+export const updateEmail = (email) => request('/api/me/email', { method: 'PUT', body: JSON.stringify({ email }) })
+
+// The free cloud server sleeps when nobody uses it and takes a minute or two to wake up.
+// This asks /api/health every 5 seconds until the server answers. Returns true when it is awake.
+export async function wakeUp({ onWaiting, isCancelled } = {}, maxSeconds = 240) {
+  const until = Date.now() + maxSeconds * 1000
+  let told = false
+  while (Date.now() < until && !isCancelled?.()) {
+    try {
+      const res = await fetch('/api/health', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+      // 200 {"status":"UP"} = awake. A 4xx also comes from our backend (an older one without /api/health), so it is awake too.
+      // 502/503/504 = the cloud is still starting it.
+      const data = res.ok ? await res.json().catch(() => null) : null
+      if (data?.status === 'UP' || (res.status >= 400 && res.status < 500)) return true
+    } catch {
+      // cannot reach it yet
+    }
+    if (!told) {
+      onWaiting?.()
+      told = true
+    }
+    await new Promise((r) => setTimeout(r, 5000))
+  }
+  return false
+}
+
 // Change my own password. Afterwards every request must carry the new password, so the stored login is updated too.
 export async function changePassword(currentPassword, newPassword) {
   const result = await request('/api/me/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) })

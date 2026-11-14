@@ -28,7 +28,7 @@ export default function Navbar() {
       {user ? (
         <>
           <span className="who">{user.username} ({user.role.toLowerCase()})</span>
-          <Link to="/password" className="who">Change password</Link>
+          <Link to="/account" className="who">My account</Link>
           <button className="btn small" onClick={() => { logout(); navigate('/login') }}>Log out</button>
         </>
       ) : (

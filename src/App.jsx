@@ -4,7 +4,7 @@ import ProtectedRoute from './auth/ProtectedRoute'
 import Navbar from './components/Navbar'
 
 import Login from './pages/Login'
-import ChangePassword from './pages/ChangePassword'
+import Account from './pages/Account'
 import Register from './pages/employee/Register'
 import MyIncidents from './pages/employee/MyIncidents'
 import ReportIncident from './pages/employee/ReportIncident'
@@ -34,7 +34,7 @@ export default function App() {
           <Route path="/employee/report" element={<ProtectedRoute roles={['EMPLOYEE']}><ReportIncident /></ProtectedRoute>} />
           <Route path="/incidents/:id" element={<ProtectedRoute roles={ALL}><IncidentDetail /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute roles={ALL}><Notifications /></ProtectedRoute>} />
-          <Route path="/password" element={<ProtectedRoute roles={ALL}><ChangePassword /></ProtectedRoute>} />
+          <Route path="/account" element={<ProtectedRoute roles={ALL}><Account /></ProtectedRoute>} />
 
           {/* Technician area (partner) */}
           <Route path="/technician" element={<ProtectedRoute roles={['TECHNICIAN', 'ADMINISTRATOR']}><AssignedIncidents /></ProtectedRoute>} />

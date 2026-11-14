@@ -52,10 +52,13 @@ function priorityFor(impact, urgency) {
 
 const slaHours = { P1: 4, P2: 8, P3: 24, P4: 72 }
 
+let currentUser = null // who logged in (for getMe / updateEmail)
+
 export async function login(username, password) {
   await delay()
   const u = USERS.find((x) => x.username === username && x.password === password)
   if (!u) throw fail(401, { error: 'Wrong username or password' })
+  currentUser = u
   return { username: u.username, role: u.role, technicianId: u.technicianId ?? null }
 }
 
@@ -68,8 +71,27 @@ export async function register(body) {
   if (!body.password || body.password.length < 6) errors.password = 'Password must be at least 6 characters'
   if (USERS.some((u) => u.username === body.username)) errors.username = 'Username already taken'
   if (Object.keys(errors).length) throw fail(400, errors)
-  USERS.push({ username: body.username, password: body.password, role: 'EMPLOYEE' })
+  USERS.push({ username: body.username, password: body.password, role: 'EMPLOYEE', email: body.email || null })
   return { username: body.username, role: 'EMPLOYEE' }
+}
+
+export async function getMe() {
+  await delay()
+  const me = currentUser || JSON.parse(sessionStorage.getItem('user') || 'null') || {}
+  return { username: me.username, role: me.role, technicianId: me.technicianId ?? null, email: me.email || '' }
+}
+
+export async function updateEmail(email) {
+  await delay()
+  const clean = (email || '').trim()
+  if (clean && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) throw fail(400, { error: 'Enter a valid email address, like name@example.com' })
+  if (currentUser) currentUser.email = clean || null
+  return { email: clean }
+}
+
+// Fake data needs no server, so it is always "awake"
+export async function wakeUp() {
+  return true
 }
 
 export async function changePassword(currentPassword, newPassword) {
