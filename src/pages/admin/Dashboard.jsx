@@ -12,16 +12,16 @@ function Bars({ title, rows }) {
   const max = Math.max(1, ...rows.map((r) => r.n))
   return (
     <div className="card">
-      <h3 style={{ margin: 0 }}>{title}</h3>
-      {rows.map((r) => (
-        <div key={r.key} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 32px', gap: 8, alignItems: 'center' }}>
-          <span>{r.label}</span>
-          <div style={{ background: '#eef3f9', borderRadius: 4 }}>
-            <div style={{ width: (r.n / max) * 100 + '%', height: 14, background: 'var(--blue)', borderRadius: 4 }} />
+      <h3>{title}</h3>
+      <div className="bars">
+        {rows.map((r) => (
+          <div key={r.key} className="bar-row">
+            <span>{r.label}</span>
+            <div className="bar-track"><div className="bar-fill" style={{ width: (r.n / max) * 100 + '%' }} /></div>
+            <b>{r.n}</b>
           </div>
-          <b style={{ textAlign: 'right' }}>{r.n}</b>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
@@ -59,12 +59,12 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginBottom: 16 }}>
+      <div className="dash-grid">
         <Bars title="Incidents by priority" rows={byPriority} />
         <Bars title="Incidents by status" rows={byStatus} />
       </div>
 
-      <div className="row">
+      <div className="row section-head">
         <h3>Technician workload</h3>
         <span className="spacer" />
         <Link to="/admin/technicians">Manage technicians</Link>

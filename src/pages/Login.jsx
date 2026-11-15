@@ -12,11 +12,12 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
   const [server, setServer] = useState('checking') // checking | waking | up | down
 
-  // On the cloud the free server may be asleep. Wake it up as soon as this page opens.
+  // Preserve the existing cloud-server wake-up flow.
   useEffect(() => {
     let cancelled = false
     api.wakeUp({ onWaiting: () => !cancelled && setServer('waking'), isCancelled: () => cancelled })
       .then((awake) => !cancelled && setServer(awake ? 'up' : 'down'))
+      .catch(() => !cancelled && setServer('down'))
     return () => { cancelled = true }
   }, [])
 
@@ -36,24 +37,46 @@ export default function Login() {
     }
   }
 
+  const demo = [['Employee', 'employee', 'employee123'], ['Technician', 'technician', 'tech123'], ['Admin', 'admin', 'admin123']]
+
   return (
-    <form className="card narrow" onSubmit={submit}>
-      <h2>Log in</h2>
-      <label>Username<input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus /></label>
-      <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
-      {server === 'waking' && (
-        <p className="muted">
-          <strong>Waking up the server...</strong> The free cloud server sleeps after 15 minutes with no visitors and
-          takes about 2 minutes to start. Please wait; the Log in button turns on by itself.
-        </p>
-      )}
-      {server === 'down' && <p className="bad">Cannot reach the server right now. Try again in a minute.</p>}
-      {error && <p className="bad">{error}</p>}
-      <button className="btn" disabled={busy || server === 'waking'}>
-        {busy ? 'Logging in...' : server === 'waking' ? 'Waiting for the server...' : 'Log in'}
-      </button>
-      <p className="muted">Demo users: employee / employee123, technician / tech123, admin / admin123</p>
-      <p>New employee? <Link to="/register">Register</Link></p>
-    </form>
+    <div className="auth">
+      <div className="auth-side">
+        <div>
+          <p className="auth-kicker">INCIDENT MANAGEMENT</p>
+          <h2>Report it. Track it. Get it fixed.</h2>
+        </div>
+        <p>Every incident gets a priority and a deadline, so the urgent ones are never lost in the queue.</p>
+        <span className="auth-mark" aria-hidden="true">I-ITSM</span>
+      </div>
+      <form className="auth-form" onSubmit={submit}>
+        <div>
+          <p className="auth-kicker">WELCOME BACK</p>
+          <h2>Log in</h2>
+          <p className="muted">Sign in to continue to your workspace.</p>
+        </div>
+        <label>Username<input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus autoComplete="username" /></label>
+        <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" /></label>
+        {server === 'waking' && (
+          <p className="muted server-message">
+            <strong>Waking up the server...</strong> The cloud server may take a minute or two to start. Please wait; the Log in button will be available when it responds.
+          </p>
+        )}
+        {server === 'down' && <p className="bad">Cannot reach the server right now. Try again in a minute.</p>}
+        {error && <p className="bad">{error}</p>}
+        <button className="btn" disabled={busy || server === 'waking'}>
+          {busy ? 'Logging in...' : server === 'waking' ? 'Waiting for the server...' : 'Log in'}
+        </button>
+        <div>
+          <p className="muted demo-label">Try a demo account</p>
+          <div className="demo">
+            {demo.map(([label, u, p]) => (
+              <button type="button" className="chip" key={u} onClick={() => { setUsername(u); setPassword(p) }}>{label}</button>
+            ))}
+          </div>
+        </div>
+        <p className="muted register-prompt">New employee? <Link to="/register">Create an account</Link></p>
+      </form>
+    </div>
   )
 }

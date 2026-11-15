@@ -1,36 +1,61 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { USE_MOCK } from '../api/config'
+
+// The reference supplies the visual navigation pattern; these glyphs avoid adding
+// a new runtime dependency just for icons.
+const LINKS = {
+  EMPLOYEE: [
+    ['/employee', 'My incidents', 'Mine', '▣'],
+    ['/employee/report', 'Report incident', 'Report', '+'],
+    ['/notifications', 'Notifications', 'Alerts', '♢'],
+  ],
+  TECHNICIAN: [
+    ['/technician', 'Assigned incidents', 'Mine', '⚒'],
+    ['/notifications', 'Notifications', 'Alerts', '♢'],
+  ],
+  ADMINISTRATOR: [
+    ['/admin', 'Dashboard', 'Home', '▦'],
+    ['/admin/incidents', 'All incidents', 'Incidents', '☷'],
+    ['/admin/technicians', 'Technicians', 'Team', '♙'],
+    ['/admin/audit', 'Audit log', 'Audit', '≡'],
+    ['/technician', 'Technician view', 'Tech', '⚒'],
+    ['/notifications', 'Notifications', 'Alerts', '♢'],
+  ],
+}
 
 export default function Navbar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-
-  const links =
-    user?.role === 'EMPLOYEE'
-      ? [['/employee', 'My incidents'], ['/employee/report', 'Report incident'], ['/notifications', 'Notifications']]
-      : user?.role === 'TECHNICIAN'
-      ? [['/technician', 'Assigned incidents'], ['/notifications', 'Notifications']]
-      : user?.role === 'ADMINISTRATOR'
-      ? [['/admin', 'Dashboard'], ['/admin/incidents', 'All incidents'], ['/admin/technicians', 'Technicians'], ['/admin/audit', 'Audit log'], ['/technician', 'Technician view'], ['/notifications', 'Notifications']]
-      : []
+  const links = user ? LINKS[user.role] || [] : []
 
   return (
-    <header className="navbar">
-      <strong className="brand">I-ITSM</strong>
+    <header className={'navbar ' + (user ? 'side' : 'guest')}>
+      <Link to="/" className="brand">I-ITSM</Link>
       {USE_MOCK && <span className="tag">FAKE DATA</span>}
-      <nav>
-        {links.map(([to, label]) => (
-          <Link key={to} to={to}>{label}</Link>
-        ))}
-      </nav>
+
+      {user && (
+        <nav aria-label="Main">
+          {links.map(([to, long, short, glyph]) => (
+            <NavLink key={to} to={to} end>
+              <span className="nav-icon" aria-hidden="true">{glyph}</span>
+              <span className="long">{long}</span>
+              <span className="short">{short}</span>
+            </NavLink>
+          ))}
+        </nav>
+      )}
+
       <span className="spacer" />
+
       {user ? (
-        <>
-          <span className="who">{user.username} ({user.role.toLowerCase()})</span>
-          <Link to="/account" className="who">My account</Link>
-          <button className="btn small" onClick={() => { logout(); navigate('/login') }}>Log out</button>
-        </>
+        <div className="userbox">
+          <span className="who">{user.username}<small>{user.role.toLowerCase()}</small></span>
+          <Link to="/account" className="account-link">My account</Link>
+          <button className="btn small" onClick={() => { logout(); navigate('/login') }}>
+            <span aria-hidden="true">↪</span> Log out
+          </button>
+        </div>
       ) : (
         <Link to="/login">Log in</Link>
       )}
