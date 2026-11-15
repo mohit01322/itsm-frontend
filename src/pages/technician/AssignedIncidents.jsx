@@ -5,7 +5,8 @@ import useLoad from '../../components/useLoad'
 import IncidentTable from '../../components/IncidentTable'
 import { showError, withSla, isDone, isSlaViolated } from '../admin/shared'
 
-// Technician page: my incidents, my workload, Start work, and Resolve (with notes).
+// Technician page: my incidents, my workload, Start work, Request delegation (needs admin approval), and Resolve (with notes).
+// Admins can look at this page but cannot start work for technicians.
 // Backend: GET /api/incidents/search?technicianId=, GET /api/technicians, PUT /api/incidents/{id}/status?status=&notes=
 // Which technician I am comes from GET /api/me at login. An admin links each login to a technician on the Technicians page.
 
@@ -21,16 +22,20 @@ export default function AssignedIncidents() {
   const [busyId, setBusyId] = useState(null)
   const [resolving, setResolving] = useState(null) // the incident being resolved, or null
   const [notes, setNotes] = useState('')
+  const [delegating, setDelegating] = useState(null) // incident being delegated
+  const [target, setTarget] = useState('')
+  const [info, setInfo] = useState('')
 
   const { data, loading, error, reload } = useLoad(async () => {
     if (notLinked) return { incidents: [], me: null }
-    const [incidents, technicians] = await Promise.all([
+    const [incidents, technicians, requests] = await Promise.all([
       techId ? api.searchIncidents({ technicianId: techId }) : api.getIncidents(),
       api.getTechnicians(),
+      isTechnician ? api.getMyDelegations() : Promise.resolve([]),
     ])
     // Admin viewing this page (no technician id): show everything that is not closed.
     const list = techId ? incidents : incidents.filter((i) => i.status !== 'CLOSED')
-    return { incidents: withSla(list).sort(byUrgency), me: technicians.find((t) => t.id === techId) }
+    return { incidents: withSla(list).sort(byUrgency), me: technicians.find((t) => t.id === techId), technicians, requests }
   }, [techId, notLinked])
 
   // Returns true when the change worked
@@ -61,11 +66,37 @@ export default function AssignedIncidents() {
     if (await setStatus(resolving.id, 'RESOLVED', notes.trim())) setResolving(null)
   }
 
+  async function confirmDelegate(e) {
+    e.preventDefault()
+    if (!target) return setActionError('Choose a technician to delegate to.')
+    setActionError('')
+    setBusyId(delegating.id)
+    try {
+      const t = await api.delegateIncident(delegating.id, Number(target))
+      setInfo('Request sent: delegate #' + delegating.id + ' to ' + t.toTechnician.name + '. The incident stays with you until an administrator approves.')
+      setDelegating(null)
+      reload()
+    } catch (err) {
+      setActionError(showError(err))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const pendingFor = (id) => (data?.requests || []).find((r) => r.incidentId === id && r.status === 'PENDING')
+
   // Only the sensible next step is allowed: OPEN -> IN_PROGRESS -> RESOLVED
   const actions = (i) => (
     <div className="row">
-      <button className="btn small" disabled={i.status !== 'OPEN' || busyId === i.id} onClick={() => setStatus(i.id, 'IN_PROGRESS')}>Start work</button>
-      <button className="btn small" disabled={i.status !== 'IN_PROGRESS' || busyId === i.id} onClick={() => startResolve(i)}>Mark resolved</button>
+      {isTechnician && (
+        <button className="btn small" disabled={i.status !== 'OPEN' || busyId === i.id} onClick={() => setStatus(i.id, 'IN_PROGRESS')}>Start work</button>
+      )}
+      {isTechnician && (
+        <button className="btn small" disabled={isDone(i) || busyId === i.id || !!pendingFor(i.id)} onClick={() => { setDelegating(i); setTarget(''); setActionError(''); setInfo('') }}>
+          {pendingFor(i.id) ? 'Delegation pending' : 'Request delegation'}
+        </button>
+      )}
+      <button className="btn small" disabled={!isTechnician || i.status !== 'IN_PROGRESS' || busyId === i.id} onClick={() => startResolve(i)}>Mark resolved</button>
     </div>
   )
 
@@ -117,9 +148,43 @@ export default function AssignedIncidents() {
         </form>
       )}
 
+      {delegating && (
+        <form className="card" onSubmit={confirmDelegate} style={{ marginBottom: 16 }}>
+          <h3 style={{ margin: 0 }}>Request delegation of #{delegating.id} {delegating.title}</h3>
+          <label>
+            Delegate to
+            <select value={target} onChange={(e) => setTarget(e.target.value)}>
+              <option value="">Select technician...</option>
+              {(data?.technicians || []).filter((t) => t.active !== false && t.id !== techId).map((t) => (
+                <option key={t.id} value={t.id}>{t.name} ({(t.skills || []).join(', ') || 'no skills'}; workload {t.activeIncidentCount ?? 0})</option>
+              ))}
+            </select>
+          </label>
+          <p className="muted">An administrator must approve this. Until then the incident stays with you.</p>
+          <div className="row">
+            <button className="btn" disabled={busyId === delegating.id}>Send request</button>
+            <button type="button" className="btn small" onClick={() => setDelegating(null)}>Cancel</button>
+          </div>
+        </form>
+      )}
+
+      {info && <p style={{ color: '#25612f', fontWeight: 600 }}>{info}</p>}
       {loading && <p>Loading...</p>}
       {(error || actionError) && <p className="bad">{error || actionError}</p>}
       {data && !notLinked && <IncidentTable incidents={list} actions={actions} />}
+      {data && data.requests.length > 0 && (
+        <>
+          <h3>My delegation requests</h3>
+          <table>
+            <thead><tr><th>Incident</th><th>To</th><th>Status</th></tr></thead>
+            <tbody>
+              {data.requests.map((r) => (
+                <tr key={r.id}><td>#{r.incidentId} {r.incidentTitle}</td><td>{r.toTechnician?.name}</td><td>{r.status}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
       {data && list.length > 0 && <p className="muted">Click a title to see full details, the SLA status and resolution notes.</p>}
     </>
   )

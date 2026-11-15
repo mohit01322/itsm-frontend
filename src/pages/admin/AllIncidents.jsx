@@ -5,15 +5,17 @@ import useLoad from '../../components/useLoad'
 import IncidentTable from '../../components/IncidentTable'
 import { CATEGORIES, STATUSES, PRIORITIES, showError, withSla, isDone } from './shared'
 
-// Admin page: every incident, 6 filters, and an Assign button on each row.
-// Backend: GET /api/incidents/search, POST /api/assignments?incidentId=&strategy=
+// Admin page: every incident, 6 filters, and an override control to change the technician.
+// Incidents are auto-assigned (skills, then workload) on creation, so there is no Assign button.
+// Backend: GET /api/incidents/search, POST /api/assignments/override
 const EMPTY = { incidentId: '', title: '', status: '', priority: '', category: '', technicianId: '' }
 const OK = { color: '#25612f', fontSize: 13, fontWeight: 600 }
 
 export default function AllIncidents() {
   const [filters, setFilters] = useState(EMPTY) // what is typed in the boxes
   const [applied, setApplied] = useState(EMPTY) // what we last searched for
-  const [strategy, setStrategy] = useState('SKILL')
+  const [overrideFor, setOverrideFor] = useState(null) // incident being overridden
+  const [newTech, setNewTech] = useState('')
   const [message, setMessage] = useState(null) // { text, bad }
   const [busyId, setBusyId] = useState(null)
 
@@ -32,16 +34,24 @@ export default function AllIncidents() {
     setApplied(EMPTY)
   }
 
-  async function assign(i) {
+  function startOverride(i) {
     setMessage(null)
-    setBusyId(i.id)
+    setOverrideFor(i)
+    setNewTech(i.assignedTechnician ? String(i.assignedTechnician.id) : '')
+  }
+
+  async function confirmOverride(e) {
+    e.preventDefault()
+    if (!newTech) return setMessage({ bad: true, text: 'Choose a technician.' })
+    setBusyId(overrideFor.id)
     try {
-      const tech = await api.assignIncident(i.id, strategy)
-      setMessage({ bad: false, text: 'Incident #' + i.id + ' assigned to ' + tech.name + ' (' + strategy + ').' })
+      const tech = await api.overrideAssignment(overrideFor.id, Number(newTech))
+      setMessage({ bad: false, text: 'Incident #' + overrideFor.id + ' reassigned to ' + tech.name + ' (admin override).' })
+      setOverrideFor(null)
       reload()
       techs.reload()
-    } catch (e) {
-      setMessage({ bad: true, text: 'Incident #' + i.id + ': ' + showError(e) })
+    } catch (err) {
+      setMessage({ bad: true, text: 'Incident #' + overrideFor.id + ': ' + showError(err) })
     } finally {
       setBusyId(null)
     }
@@ -49,8 +59,8 @@ export default function AllIncidents() {
 
   const actions = (i) => (
     <div className="row">
-      <button className="btn small" disabled={isDone(i) || busyId === i.id} onClick={() => assign(i)}>
-        {i.assignedTechnician ? 'Reassign' : 'Assign'}
+      <button className="btn small" disabled={isDone(i) || busyId === i.id} onClick={() => startOverride(i)}>
+        Override assignment
       </button>
       <Link to={'/admin/audit?incident=' + i.id}>History</Link>
     </div>
@@ -93,15 +103,25 @@ export default function AllIncidents() {
         <button type="button" className="btn small" onClick={clear}>Clear</button>
       </form>
 
-      <div className="filters">
-        <label>
-          Assignment strategy
-          <select value={strategy} onChange={(e) => setStrategy(e.target.value)}>
-            <option value="SKILL">SKILL: technician whose skill matches the category</option>
-            <option value="LEAST_LOADED">LEAST_LOADED: technician with the fewest active incidents</option>
-          </select>
-        </label>
-      </div>
+      {overrideFor && (
+        <form className="card" onSubmit={confirmOverride} style={{ marginBottom: 16 }}>
+          <h3 style={{ margin: 0 }}>Override assignment for #{overrideFor.id} {overrideFor.title}</h3>
+          <p className="muted">Currently: {overrideFor.assignedTechnician?.name || 'unassigned'}</p>
+          <label>
+            New technician
+            <select value={newTech} onChange={(e) => setNewTech(e.target.value)}>
+              <option value="">Select...</option>
+              {(techs.data || []).filter((t) => t.active !== false).map((t) => (
+                <option key={t.id} value={t.id}>{t.name} ({(t.skills || []).join(', ') || 'no skills'}; workload {t.activeIncidentCount ?? 0})</option>
+              ))}
+            </select>
+          </label>
+          <div className="row">
+            <button className="btn" disabled={busyId === overrideFor.id}>Confirm override</button>
+            <button type="button" className="btn small" onClick={() => setOverrideFor(null)}>Cancel</button>
+          </div>
+        </form>
+      )}
 
       {message && <p className={message.bad ? 'bad' : ''} style={message.bad ? null : OK}>{message.text}</p>}
       {loading && <p>Loading...</p>}

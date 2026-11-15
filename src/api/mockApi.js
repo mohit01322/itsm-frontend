@@ -144,6 +144,7 @@ export async function createIncident(body) {
     assignedTechnician: null,
   }
   incidents.push(inc)
+  autoAssign(inc)
   notifications.push({ id: notifications.length + 1, incidentId: inc.id, message: 'Incident #' + inc.id + ' was created', channel: 'IN_APP', createdAt: inc.createdAt, read: false })
   return inc
 }
@@ -153,6 +154,7 @@ export async function updateStatus(id, status, notes) {
   const inc = incidents.find((i) => i.id === Number(id))
   if (!inc) throw fail(400, { error: 'Incident not found' })
   if (!['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].includes(status)) throw fail(400, { error: 'Invalid status' })
+  if (status === 'IN_PROGRESS' && currentUser?.role === 'ADMINISTRATOR') throw fail(403, { error: 'Administrators cannot start work on behalf of technicians' })
   if (status === 'RESOLVED' && !['RESOLVED', 'CLOSED'].includes(inc.status) && !(notes || '').trim()) throw fail(400, { error: 'Resolution notes are required to resolve an incident' })
   audit.push({ id: audit.length + 1, incidentId: inc.id, action: 'STATUS_UPDATED', performedBy: 'you', timestamp: new Date().toISOString(), details: inc.status + ' to ' + status })
   inc.status = status
@@ -166,18 +168,84 @@ export async function getTechnicians() {
   return technicians
 }
 
-export async function assignIncident(incidentId, strategy) {
+function reassign(inc, tech, action, details) {
+  if (inc.assignedTechnician) inc.assignedTechnician.activeIncidentCount = Math.max(0, inc.assignedTechnician.activeIncidentCount - 1)
+  inc.assignedTechnician = tech
+  tech.activeIncidentCount += 1
+  audit.push({ id: audit.length + 1, incidentId: inc.id, action, performedBy: currentUser?.username || 'you', timestamp: new Date().toISOString(), details })
+}
+
+// Automatic policy used when an incident is created: skills first, then least loaded.
+function autoAssign(inc) {
+  const pool = technicians.filter((t) => t.active)
+  const skilled = pool.filter((t) => t.skills.includes(inc.category))
+  const byLoad = (a, b) => a.activeIncidentCount - b.activeIncidentCount || a.id - b.id
+  const pick = (skilled.length ? skilled : pool).sort(byLoad)[0]
+  if (pick) reassign(inc, pick, 'AUTOMATIC_SKILL_THEN_WORKLOAD', 'Incident assigned to ' + pick.name)
+}
+
+export async function overrideAssignment(incidentId, technicianId) {
   await delay()
   const inc = incidents.find((i) => i.id === Number(incidentId))
   if (!inc) throw fail(400, { error: 'Incident not found' })
-  const pool = technicians.filter((t) => t.active)
-  let pick
-  if (strategy === 'SKILL') pick = pool.find((t) => t.skills.includes(inc.category)) || pool[0]
-  else pick = [...pool].sort((a, b) => a.activeIncidentCount - b.activeIncidentCount)[0]
-  inc.assignedTechnician = pick
-  pick.activeIncidentCount += 1
-  audit.push({ id: audit.length + 1, incidentId: inc.id, action: 'TECHNICIAN_ASSIGNED', performedBy: 'you', timestamp: new Date().toISOString(), details: 'Assigned to ' + pick.name + ' (' + strategy + ')' })
-  return pick
+  if (['RESOLVED', 'CLOSED'].includes(inc.status)) throw fail(400, { error: 'Cannot assign a resolved or closed incident' })
+  const tech = technicians.find((t) => t.id === Number(technicianId) && t.active)
+  if (!tech) throw fail(400, { error: 'Active technician not found: ' + technicianId })
+  reassign(inc, tech, 'ADMIN_ASSIGNMENT_OVERRIDE', 'Incident assigned to ' + tech.name)
+  return tech
+}
+
+let delegations = []
+
+export async function delegateIncident(incidentId, technicianId) {
+  await delay()
+  const inc = incidents.find((i) => i.id === Number(incidentId))
+  if (!inc) throw fail(400, { error: 'Incident not found' })
+  const me = currentUser?.technicianId
+  if (!inc.assignedTechnician || inc.assignedTechnician.id !== me) throw fail(403, { error: 'Only the currently assigned technician can delegate this incident' })
+  const tech = technicians.find((t) => t.id === Number(technicianId) && t.active)
+  if (!tech || tech.id === me) throw fail(400, { error: 'Choose another active technician' })
+  if (delegations.some((d) => d.incidentId === inc.id && d.status === 'PENDING')) throw fail(409, { error: 'A delegation request for this incident is already waiting for admin approval' })
+  const d = { id: delegations.length + 1, incidentId: inc.id, incidentTitle: inc.title, fromTechnician: inc.assignedTechnician, toTechnician: tech, status: 'PENDING', requestedBy: currentUser.username, requestedAt: new Date().toISOString(), decidedBy: null, decidedAt: null }
+  delegations.push(d)
+  audit.push({ id: audit.length + 1, incidentId: inc.id, action: 'DELEGATION_REQUESTED', performedBy: currentUser.username, timestamp: d.requestedAt, details: d.fromTechnician.name + ' requested delegation to ' + tech.name + '; waiting for admin approval' })
+  notifications.push({ id: notifications.length + 1, incidentId: inc.id, message: 'Technician ' + d.fromTechnician.name + ' requests to delegate incident #' + inc.id + ' to ' + tech.name + '. Your approval is required.', channel: 'IN_APP', createdAt: d.requestedAt, read: false })
+  return d
+}
+
+export async function getDelegations(status = 'PENDING') {
+  await delay()
+  return delegations.filter((d) => status === 'ALL' || d.status === status).sort((a, b) => b.id - a.id)
+}
+
+export async function getMyDelegations() {
+  await delay()
+  return delegations.filter((d) => d.fromTechnician.id === currentUser?.technicianId).sort((a, b) => b.id - a.id)
+}
+
+function decide(id, status) {
+  const d = delegations.find((x) => x.id === Number(id))
+  if (!d) throw fail(400, { error: 'Delegation request not found: ' + id })
+  if (d.status !== 'PENDING') throw fail(409, { error: 'This request was already ' + d.status.toLowerCase() })
+  d.status = status
+  d.decidedBy = currentUser?.username || 'admin'
+  d.decidedAt = new Date().toISOString()
+  return d
+}
+
+export async function approveDelegation(id) {
+  await delay()
+  const d = decide(id, 'APPROVED')
+  const inc = incidents.find((i) => i.id === d.incidentId)
+  reassign(inc, d.toTechnician, 'DELEGATION_APPROVED', 'Incident assigned to ' + d.toTechnician.name)
+  return d
+}
+
+export async function rejectDelegation(id) {
+  await delay()
+  const d = decide(id, 'REJECTED')
+  audit.push({ id: audit.length + 1, incidentId: d.incidentId, action: 'DELEGATION_REJECTED', performedBy: d.decidedBy, timestamp: d.decidedAt, details: 'Delegation to ' + d.toTechnician.name + ' was rejected' })
+  return d
 }
 
 export async function getSla(id) {
