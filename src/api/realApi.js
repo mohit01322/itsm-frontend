@@ -104,7 +104,15 @@ export function searchIncidents(params = {}) {
 export const createIncident = (body) => request('/api/incidents', { method: 'POST', body: JSON.stringify(body) })
 export const updateStatus = (id, status, notes) => request('/api/incidents/' + id + '/status?status=' + status + (notes ? '&notes=' + encodeURIComponent(notes) : ''), { method: 'PUT' })
 export const getTechnicians = () => request('/api/technicians')
-export const assignIncident = (incidentId, strategy) => request('/api/assignments?incidentId=' + incidentId + '&strategy=' + strategy, { method: 'POST' })
+// Incidents are assigned automatically (skills first, then workload) when they are created.
+// Admin override: change the technician of an incident.
+export const overrideAssignment = (incidentId, technicianId) => request('/api/assignments/override', { method: 'POST', body: JSON.stringify({ incidentId, technicianId }) })
+// Technician delegation REQUEST: the incident stays with the technician until an admin approves.
+export const delegateIncident = (incidentId, technicianId) => request('/api/assignments/' + incidentId + '/delegate', { method: 'POST', body: JSON.stringify({ technicianId }) })
+export const getDelegations = (status = 'PENDING') => request('/api/assignments/delegations?status=' + status) // admin
+export const getMyDelegations = () => request('/api/assignments/delegations/mine') // technician
+export const approveDelegation = (id) => request('/api/assignments/delegations/' + id + '/approve', { method: 'POST' })
+export const rejectDelegation = (id) => request('/api/assignments/delegations/' + id + '/reject', { method: 'POST' })
 export const getSla = (id) => request('/api/sla/' + id)
 export const getNotifications = () => request('/api/notifications')
 export const markRead = (id) => request('/api/notifications/' + id + '/read', { method: 'PUT' })

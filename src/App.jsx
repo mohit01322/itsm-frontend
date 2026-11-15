@@ -15,6 +15,7 @@ import Dashboard from './pages/admin/Dashboard'
 import AllIncidents from './pages/admin/AllIncidents'
 import Technicians from './pages/admin/Technicians'
 import AuditLog from './pages/admin/AuditLog'
+import Delegations from './pages/admin/Delegations'
 
 const ALL = ['EMPLOYEE', 'TECHNICIAN', 'ADMINISTRATOR']
 
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/admin" element={<ProtectedRoute roles={['ADMINISTRATOR']}><Dashboard /></ProtectedRoute>} />
           <Route path="/admin/incidents" element={<ProtectedRoute roles={['ADMINISTRATOR']}><AllIncidents /></ProtectedRoute>} />
           <Route path="/admin/technicians" element={<ProtectedRoute roles={['ADMINISTRATOR']}><Technicians /></ProtectedRoute>} />
+          <Route path="/admin/delegations" element={<ProtectedRoute roles={['ADMINISTRATOR']}><Delegations /></ProtectedRoute>} />
           <Route path="/admin/audit" element={<ProtectedRoute roles={['ADMINISTRATOR']}><AuditLog /></ProtectedRoute>} />
 
           <Route path="*" element={<p>Page not found.</p>} />
