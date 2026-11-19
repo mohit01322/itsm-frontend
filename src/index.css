@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap');
 /* ==========================================================================
    I-ITSM look and feel. Every colour, font and size lives in :root.
    Priority colours (P1-P4) and status colours are used ONLY for those meanings.
@@ -330,3 +331,133 @@ dd { margin: 0; }
   .auth-form { padding: 26px 22px; }
   .navbar.guest { padding: 10px 14px; }
 }
+
+/* ======================================================================
+   Kaveesh GUI visual system — applied as a presentation layer only.
+   Existing page logic, API contracts, routes and feature state are untouched.
+   ====================================================================== */
+:root {
+  --brand: #0e7a74;
+  --brand-strong: #0a615c;
+  --brand-ink: #fff;
+  --brand-tint: #e0f1ef;
+  --brand-glow: rgba(14,122,116,.22);
+  --side: #0a161a;
+  --side-ink: #b9cfcd;
+  --side-hover: rgba(255,255,255,.08);
+  --side-active: rgba(95,209,198,.15);
+  --page: #f5f7f6;
+  --page-alt: #edf0ef;
+  --surface: #fff;
+  --surface-2: #f6f8f7;
+  --ink: #0d1a1d;
+  --muted: #5f7073;
+  --line: #dde4e3;
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 20px;
+  --font: 'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-head: 'Syne','Space Grotesk',system-ui,sans-serif;
+  --shadow-sm: 0 2px 8px rgba(13,26,29,.06);
+  --shadow-md: 0 8px 24px rgba(13,26,29,.08);
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font); color: var(--ink); background: var(--page);
+  background-image: radial-gradient(ellipse 80% 45% at 50% -15%,rgba(14,122,116,.07),transparent),
+    linear-gradient(135deg,var(--page),var(--page-alt));
+  min-height: 100vh;
+}
+h1,h2,h3,h4 { font-family: var(--font-head); letter-spacing: -.025em; }
+h2 { font-size: clamp(25px,3vw,34px); margin: 0 0 20px; }
+h3 { font-size: 20px; }
+
+/* Sidebar and responsive navigation */
+.navbar { background: linear-gradient(180deg,rgba(10,22,26,.98),rgba(10,22,26,.94));
+  border-bottom: 1px solid rgba(255,255,255,.07); box-shadow: 0 2px 24px rgba(0,0,0,.14); }
+.navbar .brand { display:flex; align-items:center; gap:12px; font-family:var(--font-head); font-size:24px;
+  font-weight:800; color:#fff; letter-spacing:-.04em; text-decoration:none; }
+.navbar .brand::before { content:'I'; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px;
+  border-radius:13px; color:#fff; font:800 21px var(--font-head); background:linear-gradient(135deg,#0e7a74,#5fd1c6,#22c55e);
+  box-shadow:0 4px 20px rgba(14,122,116,.3); }
+.navbar .brand::after { content:'I-ITSM'; background:linear-gradient(135deg,#fff,#5fd1c6); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.navbar .tag { border-radius:999px; padding:4px 10px; letter-spacing:.05em; }
+.navbar nav a { transition:all .2s ease; }
+.navbar nav a.active { color:#fff; background:rgba(95,209,198,.14); font-weight:700; }
+.navbar nav .nav-icon { width:32px; height:32px; border-radius:9px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.06); }
+.navbar .btn { border-radius:12px; }
+.userbox .who small { letter-spacing:.06em; }
+@media (min-width:900px) {
+  .navbar.side { width:280px; padding:30px 16px 22px; gap:14px; background:linear-gradient(180deg,#0a161a 0%,#0d1b1f 55%,#0a161a 100%); }
+  .navbar.side .brand { padding:0 12px 12px; }
+  .navbar.side nav { gap:7px; padding-top:8px; }
+  .navbar.side nav a { padding:11px 13px; margin:0 3px; border-radius:13px; gap:13px; }
+  .navbar.side nav a.active { background:rgba(95,209,198,.15); }
+  .navbar.side nav a.active::before { content:''; position:absolute; left:0; top:8px; bottom:8px; width:3px; border-radius:3px; background:#5fd1c6; }
+  .navbar.side nav .nav-icon { display:inline-flex; align-items:center; justify-content:center; }
+  .navbar.side .userbox { margin-top:auto; padding:18px 8px 0; border-top:1px solid rgba(255,255,255,.09); }
+  .navbar.side .account-link { display:block; padding:10px 13px; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(255,255,255,.04); text-align:center; }
+  .navbar.side ~ .page { margin-left:280px; max-width:none; padding:42px clamp(24px,4vw,58px) 80px; }
+  .navbar.side ~ .page > * { max-width:1160px; }
+}
+@media (max-width:899px) { .navbar .brand::after { display:none; } }
+
+/* Page surfaces, cards, forms and actions */
+.page { max-width:1180px; padding:28px 22px 80px; }
+.page > * { animation:uiRise .28s ease both; }
+@keyframes uiRise { from {opacity:0;transform:translateY(8px)} to {opacity:1;transform:translateY(0)} }
+.card { border:1px solid var(--line); border-radius:20px; padding:25px; box-shadow:var(--shadow-sm); transition:box-shadow .2s,border-color .2s,transform .2s; }
+.card:hover { box-shadow:var(--shadow-md); border-color:#cbd8d6; }
+label { color:#2d3e40; font-weight:600; gap:7px; }
+input,select,textarea { border:1.5px solid #d7e0de; border-radius:12px; padding:11px 13px; transition:border-color .15s,box-shadow .15s; }
+input:focus,select:focus,textarea:focus { border-color:var(--brand); box-shadow:0 0 0 4px rgba(14,122,116,.13); }
+.btn { border-radius:12px; padding:11px 19px; font-weight:700; box-shadow:0 4px 14px rgba(14,122,116,.18); transition:transform .15s,box-shadow .15s,background .15s; }
+.btn:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(14,122,116,.22); }
+.btn.small { padding:8px 13px; }
+.btn:disabled { transform:none; box-shadow:none; }
+.filters { gap:12px; margin-bottom:20px; padding:16px; background:rgba(255,255,255,.72); border:1px solid var(--line); border-radius:16px; }
+.stats { gap:14px; }
+.stat { border-radius:18px; padding:19px 20px; box-shadow:var(--shadow-sm); transition:transform .2s,box-shadow .2s; }
+.stat:hover { transform:translateY(-3px); box-shadow:var(--shadow-md); }
+.stat b { font-family:var(--font-head); font-size:34px; }
+.dash-grid { gap:18px; }
+.tablewrap { border-radius:18px; box-shadow:var(--shadow-sm); }
+table { font-size:14px; }
+th { background:#f4f7f6; color:#607174; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; }
+th,td { padding:14px 16px; border-bottom-color:#e8eeec; }
+tbody tr { transition:background .15s; }
+tbody tr:hover td { background:#f6faf9; }
+.empty { border:2px dashed #cbd8d6; border-radius:18px; padding:44px 22px; background:rgba(255,255,255,.7); }
+
+/* Delegation and assignment workflows */
+.page-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; flex-wrap:wrap; margin-bottom:20px; }
+.page-heading h2 { margin:0 0 6px; }
+.page-heading p { margin:0; color:var(--muted); max-width:720px; }
+.delegation-toolbar { display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; padding:16px; margin-bottom:18px; background:rgba(255,255,255,.78); border:1px solid var(--line); border-radius:16px; }
+.delegation-toolbar label { min-width:min(100%,260px); }
+.delegation-toolbar .btn { margin-left:auto; }
+.delegation-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:0 0 18px; }
+.delegation-summary > div { padding:15px 17px; background:#fff; border:1px solid var(--line); border-radius:15px; }
+.delegation-summary b { display:block; font:700 25px var(--font-head); }
+.delegation-summary span { color:var(--muted); font-size:12.5px; }
+.delegation-status { display:inline-flex; align-items:center; gap:7px; padding:5px 10px; border-radius:999px; background:#edf2f1; color:#526466; font-size:11px; font-weight:800; letter-spacing:.04em; }
+.delegation-status::before { content:''; width:7px; height:7px; border-radius:50%; background:currentColor; }
+.delegation-status.pending { background:#fff5df; color:#9a6410; }
+.delegation-status.approved { background:#e8f5e9; color:#28713a; }
+.delegation-status.rejected,.delegation-status.cancelled { background:#fcebea; color:#a63a32; }
+.delegation-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.delegation-actions .btn { min-width:88px; }
+.delegation-actions .btn.reject { background:#fff; color:#a63a32; border:1px solid #efc7c3; box-shadow:none; }
+.delegation-actions .btn.reject:hover { background:#fff1ef; }
+.workflow-note { padding:13px 16px; border-radius:13px; background:#eaf5f3; border:1px solid #cfe7e3; color:#285e59; font-size:13px; }
+.workflow-message { padding:12px 15px; border-radius:12px; background:#eaf5ed; border:1px solid #cde7d2; color:#28713a; font-weight:600; }
+.workflow-message.bad { background:#fff0ee; border-color:#f0cfca; color:#a63a32; }
+@media (max-width:700px) {
+  .page { padding:18px 13px 82px; }
+  .card { padding:19px; }
+  .delegation-toolbar { align-items:stretch; }
+  .delegation-toolbar .btn { margin-left:0; }
+  .delegation-actions { width:100%; }
+  .delegation-actions .btn { flex:1; }
+}
+@media (prefers-reduced-motion:reduce) { .page > *, .stat, .btn { animation:none!important; transition:none!important; } }

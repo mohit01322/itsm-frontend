@@ -6,7 +6,6 @@ import { showError } from './shared'
 
 // Admin page: delegation requests from technicians. The incident only moves when you approve.
 // Backend: GET /api/assignments/delegations?status=, POST /api/assignments/delegations/{id}/approve|reject
-const OK = { color: '#25612f', fontSize: 13, fontWeight: 600 }
 const when = (t) => (t ? new Date(t).toLocaleString() : '-')
 
 export default function Delegations() {
@@ -30,52 +29,74 @@ export default function Delegations() {
     }
   }
 
+  const requests = data || []
+  const pendingCount = requests.filter((d) => d.status === 'PENDING').length
+  const approvedCount = requests.filter((d) => d.status === 'APPROVED').length
+  const rejectedCount = requests.filter((d) => d.status === 'REJECTED').length
+
   return (
     <>
-      <h2>Delegation requests</h2>
-      <div className="filters">
+      <div className="page-heading">
+        <div>
+          <h2>Delegation requests</h2>
+          <p>Review technician-to-technician handovers. An incident changes owner only after an administrator approves the request.</p>
+        </div>
+      </div>
+
+      <div className="delegation-summary">
+        <div><b>{requests.length}</b><span>Requests in this view</span></div>
+        <div><b>{pendingCount}</b><span>Pending in this view</span></div>
+        <div><b>{approvedCount + rejectedCount}</b><span>Decided in this view</span></div>
+      </div>
+
+      <div className="delegation-toolbar">
         <label>
-          Show
+          Filter requests
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="PENDING">Waiting for approval</option>
             <option value="APPROVED">Approved</option>
             <option value="REJECTED">Rejected</option>
             <option value="CANCELLED">Cancelled</option>
-            <option value="ALL">All</option>
+            <option value="ALL">All requests</option>
           </select>
         </label>
-        <button type="button" className="btn small" onClick={reload}>Refresh</button>
+        <button type="button" className="btn small" onClick={reload}>↻ Refresh</button>
       </div>
 
-      {message && <p className={message.bad ? 'bad' : ''} style={message.bad ? null : OK}>{message.text}</p>}
-      {loading && <p>Loading...</p>}
-      {error && <p className="bad">{error}</p>}
-      {data && data.length === 0 && <p className="muted">No requests here.</p>}
+      {message && <p className={'workflow-message' + (message.bad ? ' bad' : '')}>{message.text}</p>}
+      {loading && <p className="muted">Loading delegation requests…</p>}
+      {error && <p className="workflow-message bad">{error}</p>}
+      {data && data.length === 0 && <div className="empty">No delegation requests match this filter.</div>}
       {data && data.length > 0 && (
-        <table>
-          <thead>
-            <tr><th>Incident</th><th>From</th><th>To</th><th>Requested</th><th>Status</th><th></th></tr>
-          </thead>
-          <tbody>
-            {data.map((d) => (
-              <tr key={d.id}>
-                <td><Link to={'/incidents/' + d.incidentId}>#{d.incidentId} {d.incidentTitle}</Link></td>
-                <td>{d.fromTechnician?.name}</td>
-                <td>{d.toTechnician?.name}</td>
-                <td>{when(d.requestedAt)}</td>
-                <td>{d.status}{d.decidedBy ? ' by ' + d.decidedBy : ''}</td>
-                <td>
-                  {d.status === 'PENDING' && (
-                    <div className="row">
-                      <button className="btn small" disabled={busyId === d.id} onClick={() => decide(d, true)}>Approve</button>
-                      <button className="btn small" disabled={busyId === d.id} onClick={() => decide(d, false)}>Reject</button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="tablewrap">
+          <table>
+            <thead>
+              <tr><th>Incident</th><th>Current technician</th><th>Requested technician</th><th>Requested</th><th>Status</th><th>Decision</th></tr>
+            </thead>
+            <tbody>
+              {data.map((d) => (
+                <tr key={d.id}>
+                  <td><Link to={'/incidents/' + d.incidentId}>#{d.incidentId} {d.incidentTitle}</Link></td>
+                  <td>{d.fromTechnician?.name || '—'}</td>
+                  <td>{d.toTechnician?.name || '—'}</td>
+                  <td>{when(d.requestedAt)}</td>
+                  <td>
+                    <span className={'delegation-status ' + String(d.status || '').toLowerCase()}>{d.status}</span>
+                    {d.decidedBy && <div className="muted">by {d.decidedBy}</div>}
+                  </td>
+                  <td>
+                    {d.status === 'PENDING' ? (
+                      <div className="delegation-actions">
+                        <button className="btn small" disabled={busyId === d.id} onClick={() => decide(d, true)}>{busyId === d.id ? 'Working…' : 'Approve'}</button>
+                        <button className="btn small reject" disabled={busyId === d.id} onClick={() => decide(d, false)}>Reject</button>
+                      </div>
+                    ) : <span className="muted">No action needed</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </>
   )

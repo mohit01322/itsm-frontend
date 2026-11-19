@@ -1,0 +1,10 @@
+# Netlify settings for the I-ITSM website (only used on Netlify; running on your laptop ignores this file).
+
+# 1) Every /api/... request is passed on to our Spring Boot backend on Render.
+#    That is why the code can keep using short /api/... paths, and there are no CORS problems.
+#    BEFORE YOU BUILD: replace YOUR-BACKEND with the name of your Render service.
+/api/*  https://iitsm-backend.onrender.com/api/:splat  200
+
+# 2) Any other address (like /admin/incidents) loads the React app, which then shows the right page.
+#    Without this, refreshing a page on Netlify would show "Page not found".
+/*  /index.html  200

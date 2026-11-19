@@ -105,7 +105,7 @@ export default function AssignedIncidents() {
 
   return (
     <>
-      <h2>{techId || isTechnician ? 'My assigned incidents' : 'Open incidents (all technicians)'}</h2>
+      <div className="page-heading"><div><h2>{techId || isTechnician ? 'My assigned incidents' : 'Open incidents (all technicians)'}</h2><p>Manage your workload, request an approved handover, and keep incident progress up to date.</p></div></div>
 
       {notLinked && (
         <p className="bad">
@@ -160,7 +160,7 @@ export default function AssignedIncidents() {
               ))}
             </select>
           </label>
-          <p className="muted">An administrator must approve this. Until then the incident stays with you.</p>
+          <p className="workflow-note">An administrator must approve this. Until then the incident stays assigned to you.</p>
           <div className="row">
             <button className="btn" disabled={busyId === delegating.id}>Send request</button>
             <button type="button" className="btn small" onClick={() => setDelegating(null)}>Cancel</button>
@@ -168,21 +168,23 @@ export default function AssignedIncidents() {
         </form>
       )}
 
-      {info && <p style={{ color: '#25612f', fontWeight: 600 }}>{info}</p>}
+      {info && <p className="workflow-message">{info}</p>}
       {loading && <p>Loading...</p>}
       {(error || actionError) && <p className="bad">{error || actionError}</p>}
       {data && !notLinked && <IncidentTable incidents={list} actions={actions} />}
       {data && data.requests.length > 0 && (
         <>
-          <h3>My delegation requests</h3>
-          <table>
-            <thead><tr><th>Incident</th><th>To</th><th>Status</th></tr></thead>
-            <tbody>
-              {data.requests.map((r) => (
-                <tr key={r.id}><td>#{r.incidentId} {r.incidentTitle}</td><td>{r.toTechnician?.name}</td><td>{r.status}</td></tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="section-head"><h3>My delegation requests</h3><span className="muted">{data.requests.length} request{data.requests.length === 1 ? '' : 's'}</span></div>
+          <div className="tablewrap">
+            <table>
+              <thead><tr><th>Incident</th><th>Requested technician</th><th>Status</th></tr></thead>
+              <tbody>
+                {data.requests.map((r) => (
+                  <tr key={r.id}><td>#{r.incidentId} {r.incidentTitle}</td><td>{r.toTechnician?.name || '—'}</td><td><span className={'delegation-status ' + String(r.status || '').toLowerCase()}>{r.status}</span></td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
       {data && list.length > 0 && <p className="muted">Click a title to see full details, the SLA status and resolution notes.</p>}

@@ -32,13 +32,13 @@ export default function Navbar() {
 
   return (
     <header className={'navbar ' + (user ? 'side' : 'guest')}>
-      <Link to="/" className="brand">I-ITSM</Link>
+      <Link to="/" className="brand" aria-label="I-ITSM Home" />
       {USE_MOCK && <span className="tag">FAKE DATA</span>}
 
       {user && (
         <nav aria-label="Main">
           {links.map(([to, long, short, glyph]) => (
-            <NavLink key={to} to={to} end>
+            <NavLink key={to} to={to} end className={({ isActive }) => isActive ? 'active' : ''}>
               <span className="nav-icon" aria-hidden="true">{glyph}</span>
               <span className="long">{long}</span>
               <span className="short">{short}</span>
