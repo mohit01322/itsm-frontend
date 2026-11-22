@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../../api/client'
 import useLoad from '../../components/useLoad'
 import { StatusBadge, PriorityBadge } from '../../components/Badges'
-import { PRIORITIES, STATUSES, isSlaViolated, isDone } from './shared'
+import { PRIORITIES, STATUSES, isSlaViolated, isDone, isFull, workloadText, loadWorkloadLimit } from './shared'
 
 // Admin home page. There is no stats endpoint, so we count everything in the browser.
 // Backend: GET /api/incidents, GET /api/technicians
@@ -28,26 +28,33 @@ function Bars({ title, rows }) {
 
 export default function Dashboard() {
   const { data, loading, error } = useLoad(async () => {
-    const [incidents, technicians] = await Promise.all([api.getIncidents(), api.getTechnicians()])
-    return { incidents, technicians }
+    const [incidents, technicians, limit] = await Promise.all([api.getIncidents(), api.getTechnicians(), loadWorkloadLimit(api)])
+    return { incidents, technicians, limit }
   })
   if (loading) return <p>Loading...</p>
   if (error) return <p className="bad">{error}</p>
 
-  const { incidents, technicians } = data
+  const { incidents, technicians, limit } = data
   const count = (fn) => incidents.filter(fn).length
 
   const stats = [
     ['Total incidents', incidents.length],
     ['Open', count((i) => i.status === 'OPEN')],
     ['In progress', count((i) => i.status === 'IN_PROGRESS')],
+    ['Resolved / closed', count(isDone)],
     ['Critical (P1)', count((i) => i.priority === 'P1')],
     ['Unassigned', count((i) => !i.assignedTechnician && !isDone(i))],
     ['SLA violated', count(isSlaViolated)],
+    ['SLA at risk', count((i) => !isDone(i) && !isSlaViolated(i) && i.slaRiskLevel === 'HIGH')],
   ]
 
   const byPriority = PRIORITIES.map((p) => ({ key: p, label: <PriorityBadge priority={p} />, n: count((i) => i.priority === p) }))
   const byStatus = STATUSES.map((s) => ({ key: s, label: <StatusBadge status={s} />, n: count((i) => i.status === s) }))
+  // Service analysis: how many incidents each IT service had (most first)
+  const serviceNames = [...new Set(incidents.map((i) => i.affectedService?.name || 'Not specified'))]
+  const byService = serviceNames
+    .map((name) => ({ key: name, label: name, n: count((i) => (i.affectedService?.name || 'Not specified') === name) }))
+    .sort((a, b) => b.n - a.n)
   const workload = [...technicians].sort((a, b) => (b.activeIncidentCount ?? 0) - (a.activeIncidentCount ?? 0))
 
   return (
@@ -62,6 +69,7 @@ export default function Dashboard() {
       <div className="dash-grid">
         <Bars title="Incidents by priority" rows={byPriority} />
         <Bars title="Incidents by status" rows={byStatus} />
+        {byService.length > 0 && <Bars title="Incidents by IT service" rows={byService} />}
       </div>
 
       <div className="row section-head">
@@ -73,13 +81,13 @@ export default function Dashboard() {
       {workload.length > 0 && (
         <div className="tablewrap">
           <table>
-            <thead><tr><th>Name</th><th>Skills</th><th>Active incidents</th><th>Available</th></tr></thead>
+            <thead><tr><th>Name</th><th>Skills</th><th>Active incidents{limit != null ? ' (limit ' + limit + ')' : ''}</th><th>Available</th></tr></thead>
             <tbody>
               {workload.map((t) => (
                 <tr key={t.id}>
                   <td>{t.name}</td>
                   <td>{(t.skills || []).join(', ')}</td>
-                  <td>{t.activeIncidentCount ?? 0}</td>
+                  <td className={isFull(t, limit) ? 'bad' : ''}>{workloadText(t, limit)}</td>
                   <td>{t.active === false ? <span className="muted">No</span> : 'Yes'}</td>
                 </tr>
               ))}

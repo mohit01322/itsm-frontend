@@ -121,3 +121,38 @@ export const getAudit = (incidentId) => request('/api/audit/' + incidentId)
 // Technicians: add and edit (used by the admin Technicians page)
 export const createTechnician = (body) => request('/api/technicians', { method: 'POST', body: JSON.stringify(body) })
 export const updateTechnician = (id, body) => request('/api/technicians/' + id, { method: 'PUT', body: JSON.stringify(body) })
+
+export const updateIncident = (id, body) => request('/api/incidents/' + id, { method: 'PUT', body: JSON.stringify(body) })
+export const getIncidentNotes = (id) => request('/api/incidents/' + id + '/notes')
+export const addIncidentNote = (id, body) => request('/api/incidents/' + id + '/notes', { method: 'POST', body: JSON.stringify(body) })
+export const getFeedback = (id) => request('/api/incidents/' + id + '/feedback')
+export const submitFeedback = (id, body) => request('/api/incidents/' + id + '/feedback', { method: 'POST', body: JSON.stringify(body) })
+export const getServices = () => request('/api/services')
+export const createService = (body) => request('/api/services', { method: 'POST', body: JSON.stringify(body) })
+export const updateService = (id, body) => request('/api/services/' + id, { method: 'PUT', body: JSON.stringify(body) })
+export const getCategories = () => request('/api/categories')
+export const createCategory = (body) => request('/api/categories', { method: 'POST', body: JSON.stringify(body) })
+export const updateCategory = (id, body) => request('/api/categories/' + id, { method: 'PUT', body: JSON.stringify(body) })
+export const getSlaPolicies = () => request('/api/sla-policies')
+export const updateSlaPolicy = (priority, body) => request('/api/sla-policies/' + priority, { method: 'PUT', body: JSON.stringify(body) })
+export const getUsers = () => request('/api/users')
+export const updateUser = (id, body) => request('/api/users/' + id, { method: 'PUT', body: JSON.stringify(body) })
+
+// Admin: how new incidents are assigned. Returns { strategy, options: [{ value, label, description }] }
+export const getAssignmentStrategy = () => request('/api/settings/assignment-strategy')
+export const updateAssignmentStrategy = (strategy) => request('/api/settings/assignment-strategy', { method: 'PUT', body: JSON.stringify({ strategy }) })
+
+// Technician: "I have seen this incident". It stays OPEN; the time counts as the first response for the SLA.
+export const acknowledgeIncident = (id) => request('/api/incidents/' + id + '/acknowledge', { method: 'POST' })
+
+// Technician / admin: how similar finished incidents were fixed. [{ incidentId, title, category, resolutionNotes, matchPercent }]
+export const getSuggestions = (id) => request('/api/incidents/' + id + '/suggestions')
+
+// Admin: SLA for one IT service (replaces the standard SLA for that service). Body: { responseTimeMinutes, resolutionTimeMinutes, warningTimeMinutes }
+export const getServiceSlaPolicies = () => request('/api/sla-policies/services')
+export const updateServiceSlaPolicy = (serviceId, priority, body) => request('/api/sla-policies/services/' + serviceId + '/' + priority, { method: 'PUT', body: JSON.stringify(body) })
+export const deleteServiceSlaPolicy = (serviceId, priority) => request('/api/sla-policies/services/' + serviceId + '/' + priority, { method: 'DELETE' })
+
+// Most active incidents one technician may have. Returns { maxActiveIncidents }. Technicians and admins can read it; admins change it.
+export const getWorkloadLimit = () => request('/api/settings/workload-limit')
+export const updateWorkloadLimit = (maxActiveIncidents) => request('/api/settings/workload-limit', { method: 'PUT', body: JSON.stringify({ maxActiveIncidents }) })

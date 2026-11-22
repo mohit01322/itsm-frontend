@@ -3,9 +3,9 @@ import { api } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
 import useLoad from '../../components/useLoad'
 import IncidentTable from '../../components/IncidentTable'
-import { showError, withSla, isDone, isSlaViolated } from '../admin/shared'
+import { showError, withSla, isDone, isSlaViolated, isFull, workloadText, loadWorkloadLimit } from '../admin/shared'
 
-// Technician page: my incidents, my workload, Start work, Request delegation (needs admin approval), and Resolve (with notes).
+// Technician page: my incidents, my workload, Acknowledge, Start work, Request delegation (needs admin approval), and Resolve (with notes).
 // Admins can look at this page but cannot start work for technicians.
 // Backend: GET /api/incidents/search?technicianId=, GET /api/technicians, PUT /api/incidents/{id}/status?status=&notes=
 // Which technician I am comes from GET /api/me at login. An admin links each login to a technician on the Technicians page.
@@ -28,14 +28,15 @@ export default function AssignedIncidents() {
 
   const { data, loading, error, reload } = useLoad(async () => {
     if (notLinked) return { incidents: [], me: null }
-    const [incidents, technicians, requests] = await Promise.all([
+    const [incidents, technicians, requests, limit] = await Promise.all([
       techId ? api.searchIncidents({ technicianId: techId }) : api.getIncidents(),
       api.getTechnicians(),
       isTechnician ? api.getMyDelegations() : Promise.resolve([]),
+      loadWorkloadLimit(api),
     ])
     // Admin viewing this page (no technician id): show everything that is not closed.
     const list = techId ? incidents : incidents.filter((i) => i.status !== 'CLOSED')
-    return { incidents: withSla(list).sort(byUrgency), me: technicians.find((t) => t.id === techId), technicians, requests }
+    return { incidents: withSla(list).sort(byUrgency), me: technicians.find((t) => t.id === techId), technicians, requests, limit }
   }, [techId, notLinked])
 
   // Returns true when the change worked
@@ -66,6 +67,22 @@ export default function AssignedIncidents() {
     if (await setStatus(resolving.id, 'RESOLVED', notes.trim())) setResolving(null)
   }
 
+  // "I have seen it": the incident stays OPEN, the employee is told, and the time counts as the first response
+  async function acknowledge(i) {
+    setActionError('')
+    setInfo('')
+    setBusyId(i.id)
+    try {
+      await api.acknowledgeIncident(i.id)
+      setInfo('Acknowledged #' + i.id + '. The employee has been told you have seen it.')
+      reload()
+    } catch (e) {
+      setActionError(showError(e))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   async function confirmDelegate(e) {
     e.preventDefault()
     if (!target) return setActionError('Choose a technician to delegate to.')
@@ -85,9 +102,14 @@ export default function AssignedIncidents() {
 
   const pendingFor = (id) => (data?.requests || []).find((r) => r.incidentId === id && r.status === 'PENDING')
 
-  // Only the sensible next step is allowed: OPEN -> IN_PROGRESS -> RESOLVED
+  // Only the sensible next step is allowed: OPEN (acknowledge) -> IN_PROGRESS -> RESOLVED
   const actions = (i) => (
     <div className="row">
+      {isTechnician && i.status === 'OPEN' && (
+        <button className="btn small" disabled={!!i.acknowledgedAt || busyId === i.id} onClick={() => acknowledge(i)}>
+          {i.acknowledgedAt ? 'Acknowledged' : 'Acknowledge'}
+        </button>
+      )}
       {isTechnician && (
         <button className="btn small" disabled={i.status !== 'OPEN' || busyId === i.id} onClick={() => setStatus(i.id, 'IN_PROGRESS')}>Start work</button>
       )}
@@ -125,7 +147,8 @@ export default function AssignedIncidents() {
             {' · '}{data.me.active === false ? 'Not available for new work' : 'Available'}
           </p>
           <div className="stats">
-            <div className="stat"><b>{data.me.activeIncidentCount ?? 0}</b><span>My workload (active incidents)</span></div>
+            <div className="stat"><b>{workloadText(data.me, data.limit)}</b><span>My workload (active incidents{data.limit != null ? ' / limit' : ''})</span></div>
+            <div className="stat"><b>{count((i) => i.status === 'OPEN' && !i.acknowledgedAt)}</b><span>New, not acknowledged</span></div>
             <div className="stat"><b>{count((i) => i.status === 'OPEN')}</b><span>Waiting to start</span></div>
             <div className="stat"><b>{count((i) => i.status === 'IN_PROGRESS')}</b><span>In progress</span></div>
             <div className="stat"><b>{count((i) => !isDone(i) && isSlaViolated(i))}</b><span>Past SLA deadline</span></div>
@@ -156,7 +179,7 @@ export default function AssignedIncidents() {
             <select value={target} onChange={(e) => setTarget(e.target.value)}>
               <option value="">Select technician...</option>
               {(data?.technicians || []).filter((t) => t.active !== false && t.id !== techId).map((t) => (
-                <option key={t.id} value={t.id}>{t.name} ({(t.skills || []).join(', ') || 'no skills'}; workload {t.activeIncidentCount ?? 0})</option>
+                <option key={t.id} value={t.id} disabled={isFull(t, data.limit)}>{t.name} ({(t.skills || []).join(', ') || 'no skills'}; workload {workloadText(t, data.limit)})</option>
               ))}
             </select>
           </label>

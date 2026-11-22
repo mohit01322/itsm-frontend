@@ -26,3 +26,10 @@ export function isSlaViolated(i) {
 export const withSla = (list) => list.map((i) => ({ ...i, slaViolated: isSlaViolated(i) }))
 
 export const isDone = (i) => i.status === 'RESOLVED' || i.status === 'CLOSED'
+
+// Workload against the admin's limit (Settings). A full technician gets no new incidents.
+// limit is null while it loads (or if it cannot be read); then only the number is shown.
+export const isFull = (t, limit) => limit != null && (t.activeIncidentCount ?? 0) >= limit
+export const workloadText = (t, limit) => (t.activeIncidentCount ?? 0) + (limit != null ? ' / ' + limit : '') + (isFull(t, limit) ? ' (full)' : '')
+// Loads the limit; returns null instead of failing, so pages still work with an older backend
+export const loadWorkloadLimit = (api) => api.getWorkloadLimit().then((r) => r.maxActiveIncidents).catch(() => null)

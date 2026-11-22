@@ -20,6 +20,7 @@ const LINKS = {
     ['/admin/technicians', 'Technicians', 'Team', '♙'],
     ['/admin/delegations', 'Delegations', 'Approve', '⇄'],
     ['/admin/audit', 'Audit log', 'Audit', '≡'],
+    ['/admin/settings', 'Settings', 'Settings', '⚙'],
     ['/technician', 'Technician view', 'Tech', '⚒'],
     ['/notifications', 'Notifications', 'Alerts', '♢'],
   ],

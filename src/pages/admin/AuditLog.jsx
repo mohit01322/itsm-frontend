@@ -21,7 +21,7 @@ export default function AuditLog() {
 
   const options = incidents.data ? [...incidents.data].sort((a, b) => b.id - a.id) : []
   const rows = history.data ? [...history.data].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) : null
-  const showBy = rows?.some((r) => r.performedBy) // the real backend does not record who did it yet
+  const showBy = rows?.some((r) => r.performedBy)
 
   return (
     <>
@@ -45,7 +45,7 @@ export default function AuditLog() {
         <div className="tablewrap">
           <table>
             <thead>
-              <tr><th>Time</th><th>Action</th>{showBy && <th>By</th>}<th>Details</th></tr>
+              <tr><th>Time</th><th>Action</th>{showBy && <th>By</th>}<th>Previous</th><th>New</th><th>Details</th></tr>
             </thead>
             <tbody>
               {rows.map((r) => (
@@ -53,6 +53,8 @@ export default function AuditLog() {
                   <td>{new Date(r.timestamp).toLocaleString()}</td>
                   <td>{niceAction(r.action)}</td>
                   {showBy && <td>{r.performedBy || '-'}</td>}
+                  <td>{r.previousState || '-'}</td>
+                  <td>{r.newState || '-'}</td>
                   <td>{r.details}</td>
                 </tr>
               ))}

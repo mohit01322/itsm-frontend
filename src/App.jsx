@@ -16,6 +16,7 @@ import AllIncidents from './pages/admin/AllIncidents'
 import Technicians from './pages/admin/Technicians'
 import AuditLog from './pages/admin/AuditLog'
 import Delegations from './pages/admin/Delegations'
+import Settings from './pages/admin/Settings'
 
 const ALL = ['EMPLOYEE', 'TECHNICIAN', 'ADMINISTRATOR']
 
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/admin/technicians" element={<ProtectedRoute roles={['ADMINISTRATOR']}><Technicians /></ProtectedRoute>} />
           <Route path="/admin/delegations" element={<ProtectedRoute roles={['ADMINISTRATOR']}><Delegations /></ProtectedRoute>} />
           <Route path="/admin/audit" element={<ProtectedRoute roles={['ADMINISTRATOR']}><AuditLog /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute roles={['ADMINISTRATOR']}><Settings /></ProtectedRoute>} />
 
           <Route path="*" element={<p>Page not found.</p>} />
         </Routes>

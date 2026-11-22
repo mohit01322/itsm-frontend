@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '../../api/client'
 import useLoad from '../../components/useLoad'
-import { CATEGORIES, showError } from './shared'
+import { CATEGORIES, showError, isFull, workloadText, loadWorkloadLimit } from './shared'
 
 // Admin page: list technicians, add a new one, edit name / skills / available.
 // Backend: GET /api/technicians, POST /api/technicians, PUT /api/technicians/{id}
@@ -11,6 +11,10 @@ const OK = { color: '#25612f', fontSize: 13, fontWeight: 600 }
 
 export default function Technicians() {
   const { data, loading, error, reload } = useLoad(() => api.getTechnicians())
+  // Skills use the category names the admin manages on the Settings page (falls back to the default list)
+  const cats = useLoad(() => api.getCategories())
+  const limit = useLoad(() => loadWorkloadLimit(api)).data ?? null
+  const skillNames = cats.data ? cats.data.filter((c) => c.active !== false).map((c) => c.name) : CATEGORIES
   const [form, setForm] = useState(BLANK)
   const [editing, setEditing] = useState(null) // the technician being edited, or null when adding a new one
   const [message, setMessage] = useState(null) // { text, bad }
@@ -88,7 +92,7 @@ export default function Technicians() {
         <div>
           <b style={{ fontSize: 14 }}>Skills</b> <span className="muted">(same words as incident categories)</span>
           <div className="row" style={{ marginTop: 6 }}>
-            {CATEGORIES.map((c) => (
+            {skillNames.map((c) => (
               <label key={c} style={CHECK}>
                 <input type="checkbox" checked={form.skills.includes(c)} onChange={() => toggleSkill(c)} /> {c}
               </label>
@@ -113,7 +117,7 @@ export default function Technicians() {
         <div className="tablewrap">
           <table>
             <thead>
-              <tr><th>ID</th><th>Name</th><th>Login</th><th>Skills</th><th>Active incidents</th><th>Available</th><th></th></tr>
+              <tr><th>ID</th><th>Name</th><th>Login</th><th>Skills</th><th>Active incidents{limit != null ? ' (limit ' + limit + ')' : ''}</th><th>Available</th><th></th></tr>
             </thead>
             <tbody>
               {data.map((t) => (
@@ -122,7 +126,7 @@ export default function Technicians() {
                   <td>{t.name}</td>
                   <td>{t.username || <span className="muted">not linked</span>}</td>
                   <td>{(t.skills || []).join(', ')}</td>
-                  <td>{t.activeIncidentCount ?? 0}</td>
+                  <td className={isFull(t, limit) ? 'bad' : ''}>{workloadText(t, limit)}</td>
                   <td>{t.active === false ? <span className="muted">No</span> : 'Yes'}</td>
                   <td><button className="btn small" onClick={() => startEdit(t)}>Edit</button></td>
                 </tr>

@@ -452,6 +452,12 @@ tbody tr:hover td { background:#f6faf9; }
 .workflow-note { padding:13px 16px; border-radius:13px; background:#eaf5f3; border:1px solid #cfe7e3; color:#285e59; font-size:13px; }
 .workflow-message { padding:12px 15px; border-radius:12px; background:#eaf5ed; border:1px solid #cde7d2; color:#28713a; font-weight:600; }
 .workflow-message.bad { background:#fff0ee; border-color:#f0cfca; color:#a63a32; }
+/* Assignment strategy choices (Settings) and suggested fixes (incident page) */
+label.choice { flex-direction:row; align-items:flex-start; gap:10px; font-weight:400; padding:10px 12px; margin-bottom:8px; border:1px solid var(--line); border-radius:12px; cursor:pointer; }
+label.choice input[type="radio"] { width:auto; margin-top:3px; accent-color:var(--brand); }
+.suggestion { padding:12px 14px; border:1px solid var(--line); border-radius:12px; margin-top:10px; }
+.suggestion p { margin:6px 0 0; white-space:pre-wrap; }
+.match { display:inline-block; padding:2px 8px; border-radius:999px; background:#eaf5f3; color:#285e59; font-size:12px; font-weight:600; }
 @media (max-width:700px) {
   .page { padding:18px 13px 82px; }
   .card { padding:19px; }
