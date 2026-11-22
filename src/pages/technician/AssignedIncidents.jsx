@@ -27,7 +27,8 @@ export default function AssignedIncidents() {
   const [info, setInfo] = useState('')
 
   const { data, loading, error, reload } = useLoad(async () => {
-    if (notLinked) return { incidents: [], me: null }
+    // Not linked yet: nothing to load, but return every field the page reads (a missing list blanked the whole page)
+    if (notLinked) return { incidents: [], me: null, technicians: [], requests: [], limit: null }
     const [incidents, technicians, requests, limit] = await Promise.all([
       techId ? api.searchIncidents({ technicianId: techId }) : api.getIncidents(),
       api.getTechnicians(),
@@ -195,7 +196,7 @@ export default function AssignedIncidents() {
       {loading && <p>Loading...</p>}
       {(error || actionError) && <p className="bad">{error || actionError}</p>}
       {data && !notLinked && <IncidentTable incidents={list} actions={actions} />}
-      {data && data.requests.length > 0 && (
+      {data?.requests?.length > 0 && (
         <>
           <div className="section-head"><h3>My delegation requests</h3><span className="muted">{data.requests.length} request{data.requests.length === 1 ? '' : 's'}</span></div>
           <div className="tablewrap">
