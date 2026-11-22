@@ -1,42 +1,54 @@
-# I-ITSM Frontend (React PWA) - start here (Mac)
+# I-ITSM Frontend (React) - start here
 
-## Run it (first time)
-1. Unzip this folder, e.g. into `Documents/itsm-frontend`.
-2. Open **VS Code** -> File -> Open Folder -> choose `itsm-frontend`.
-3. Open the terminal inside VS Code: menu **Terminal -> New Terminal**.
-4. Type these two commands (press Enter after each):
+The website for the I-ITSM incident management project. The backend (Spring Boot) is in the separate `OOPS_Project_Final` repository.
+
+Live version: https://iitsm-bits.netlify.app
+
+## Run it on your computer
+
+You need Node.js 18 or newer, and the backend running on http://localhost:8080 (see the backend repository's README.md: create the `itsm_db` database, then `mvn spring-boot:run`).
+
+1. Open a terminal in this folder and run (press Enter after each):
+
        npm install
        npm run dev
-5. Open http://localhost:5173 in Chrome.
-6. Log in with: `employee / employee123`, `technician / tech123`, `admin / admin123`.
-7. Stop the app: click the terminal and press `Control + C`.
+
+2. Open http://localhost:5173 in Chrome.
+3. Log in with the demo buttons, or with:
+
+   | Login | Password | Role |
+   | --- | --- | --- |
+   | admin | admin123 | Administrator |
+   | employee | employee123 | Employee |
+   | technician | tech123 | Technician (Ravi Kumar) |
+   | priya | priya123 | Technician (Priya Sharma) |
+   | arjun | arjun123 | Technician (Arjun Mehta) |
+
+   On a new (empty) database the backend adds these technicians and six sample incidents by itself.
+4. Stop the app: click the terminal and press `Ctrl + C`.
 
 Next time you only need `npm run dev`.
 
-## IMPORTANT: it uses FAKE data right now
-`src/api/config.js` has `USE_MOCK = true`. The orange "FAKE DATA" tag in the top bar shows this.
-Fake data lives in `src/api/mockApi.js`. It resets every time you reload the browser page. That is normal.
-On **Wed 11 Nov**, when the backend runs on your laptop, change it to `USE_MOCK = false`.
-
 ## Where things are
-    src/api/config.js        THE SWITCH (fake / real)
-    src/api/mockApi.js       fake backend
-    src/api/realApi.js       real backend calls (Basic auth, /api proxy)
+
+    src/api/config.js        USE_MOCK = false: talks to the real backend (true = old fake data, without the newer features)
+    src/api/realApi.js       every backend call (Basic auth, through the /api proxy)
     src/auth/                login state + role guards
     src/components/          shared: Navbar, IncidentTable, Badges, useLoad
-    src/pages/employee/      MOHIY  (Register, MyIncidents, ReportIncident, IncidentDetail, Notifications)
-    src/pages/technician/    PARTNER (AssignedIncidents)
-    src/pages/admin/         PARTNER (Dashboard, AllIncidents, Technicians, AuditLog)
+    src/pages/employee/      Register, MyIncidents, ReportIncident, IncidentDetail, Notifications
+    src/pages/technician/    AssignedIncidents
+    src/pages/admin/         Dashboard, AllIncidents, Technicians, Delegations, AuditLog, Settings
+    src/pages/               Login, Account, ChangePassword
     src/App.jsx              the list of page addresses (routes)
     src/index.css            all the colours and layout
+    public/_redirects        on Netlify, sends /api calls to the cloud backend
 
-## Rules for two people
-- Edit only your own folder. Shared files (api/, auth/, components/, App.jsx, index.css): message the other person first.
-- GitHub Desktop every time: Fetch/Pull -> work -> Commit -> Push.
+## Put a new version online
 
-## Things the backend team still has to add (the UI already expects them)
-CORS (not needed in dev, the proxy handles it), GET /api/me, POST /api/auth/register, reporter on incidents + GET /api/incidents/mine,
-notes, resolution text, feedback, users. Search for "TODO" in the code to see where each one plugs in.
+    npm run build
 
-## Make it a phone app (PWA)
-`npm run build` then `npm run preview`, open the shown address in Chrome, and use the install icon in the address bar.
+Then drag the `dist` folder onto the site's Deploys page on Netlify.
+
+## Install it like an app (PWA)
+
+On the live site, use the install icon in Chrome's address bar.
